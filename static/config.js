@@ -5,6 +5,7 @@ export default class {
 		if (!this.channels) { this.channels = []; } //if channels is null, change to empty array
 		this.current_channel = localStorage.getItem('current_channel');
 		this.socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
+		this.clientID = localStorage.getItem('clientID');
 	}
 	setDisplayName (display_name) {
 		this.display_name = display_name;
@@ -22,6 +23,15 @@ export default class {
 	setCurrentChannel(current_channel) {
 		this.current_channel = current_channel;
 		localStorage.setItem('current_channel', current_channel);
+	}
+	setClientID (clientID) {
+		this.clientID = localStorage.setItem('clientID', clientID);
+	}
+	clearAll() {
+		this.display_name = null;
+		this.channels = []
+		this.current_channel = null;
+		localStorage.clear();
 	}
 }
 

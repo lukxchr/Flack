@@ -1,6 +1,6 @@
 import os
 from flask import Flask, render_template, jsonify, request
-from flask_socketio import SocketIO, emit, join_room, leave_room
+from flask_socketio import SocketIO, emit, join_room, leave_room, disconnect
 from string import ascii_lowercase, digits
 import re
 from random import choices
@@ -8,7 +8,7 @@ from models import Channel, Message
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
-socketio = SocketIO(app)
+socketio = SocketIO(app, always_connect=False)
 
 users = set()
 client_ids = {} #client id : display name
@@ -82,12 +82,34 @@ def send_message(data):
 	emit('send message to clients', {'message' : message.serialize()}, 
 		room=channel_name, broadcast=True)
 
+@socketio.on('rejoin')
+def rejoin(data):
+	display_name = data['display_name']
+	prev_id = data['previous_client_id']
+	prev_display_name = client_ids.get(prev_id)
+	if display_name in users and prev_display_name != display_name:
+		emit("add user failed", {'display_name' : display_name, 
+			'message' : 'Authentication failed. Please use a different display name'})
+	else:
+		emit("user added", {'display_name' : display_name, 
+			'channels' : [ch.name for ch in channels]})
+		joined_channels = [ch for ch in channels if display_name in ch.users]
+		for ch in joined_channels:
+			leave_room(ch.name, sid=prev_id)
+			join_room(ch.name)
+			emit('channel joined', {'messages': [m.serialize() for m in ch.messages], 'channel_name' : ch.name})
+
+
+
+
 @socketio.on("connect")
 def connect():
     print('client connected ' + request.sid)
+    return True
  
 @socketio.on('disconnect')
 def disconnect():
+	print(f"{request.sid} disconnected")
 	display_name = client_ids.get(request.sid)
 	users.discard(display_name)
 	joined_channels = [ch for ch in channels if display_name in ch.users]

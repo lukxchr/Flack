@@ -25,11 +25,12 @@ document.addEventListener('DOMContentLoaded', () => {
     	if (CONFIG.display_name) {
     		console.log("config loaded from localStorage")
     		console.log(CONFIG);
+    		CONFIG.socket.emit('rejoin', 
+    			{display_name: CONFIG.display_name, previous_client_id: CONFIG.clientID});
     	} else {
     		renderDisplayNamePrompt();
-    		//console.log(socket.io.engine.id);
     	}
-
+    	CONFIG.setClientID(CONFIG.socket.io.engine.id);
     });
 
 
@@ -101,8 +102,6 @@ function addDOMListeners() {
 		new_channel_input.value = '';
 	}
 
-	//join channel
-
 	//send message
 	const send_button = document.querySelector("#send-button");
 	const message_input = document.querySelector("#message-input");
@@ -113,7 +112,11 @@ function addDOMListeners() {
 			sendMessage();
 	}
 
-	//attach file
+	//log out
+	document.querySelector("#log-out-button").onclick = () => {
+		CONFIG.clearAll();
+		window.location.reload(true);
+	}
 
 	//adjust interface if window size changes
 	window.onresize = () => {
