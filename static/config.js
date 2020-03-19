@@ -15,6 +15,10 @@ export default class {
 		this.channels = channels;
 		localStorage.setItem('channels', JSON.stringify(channels));
 	}
+	addChannel(channel) {
+		this.channels.push(channel);
+		localStorage.setItem('channels', JSON.stringify(this.channels));
+	}
 	setCurrentChannel(current_channel) {
 		this.current_channel = current_channel;
 		localStorage.setItem('current_channel', current_channel);

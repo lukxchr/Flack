@@ -1,10 +1,12 @@
 import Config from './config.js';
 
+//Config constructor gets gloabals from localStorage if available
+//and connects to web socket 
 const CONFIG = new Config();
 
 //globals declarations
-var display_name, current_channel, socket;
-var channels = [];
+// var display_name, current_channel, socket;
+// var channels = [];
 
 
 //templates
@@ -15,16 +17,17 @@ const message_template = Handlebars.compile('<div class="message"><strong>{{ sen
 
 document.addEventListener('DOMContentLoaded', () => {
 	// Connect to websocket
-    socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
+    //socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
     resizeInterface();
     addDOMListeners();
-    socket.on('connect', () => {
+    CONFIG.socket.on('connect', () => {
     	addSocketIOListeners();
-    	if (display_name) {
-    		console.log("user: " + display_name);
+    	if (CONFIG.display_name) {
+    		console.log("config loaded from localStorage")
+    		console.log(CONFIG);
     	} else {
     		renderDisplayNamePrompt();
-    		console.log(socket.io.engine.id);
+    		//console.log(socket.io.engine.id);
     	}
 
     });
@@ -42,45 +45,45 @@ function renderDisplayNamePrompt (message='') {
     	closeButton: false,
     	onEscape: false,
     	callback: (res) => {
-    		socket.emit('add user', {display_name: res});
+    		CONFIG.socket.emit('add user', {display_name: res});
     	}
     });
 }
 
 function addSocketIOListeners() {
-	socket.on('user added', (data) => {
-		console.log(data);
-		display_name = data['display_name'];
-		channels = data['channels'];
+	CONFIG.socket.on('user added', (data) => {
+		//display_name = data['display_name'];
+		//channels = data['channels'];
+		CONFIG.setDisplayName(data['display_name']);
+		CONFIG.setChannels(data['channels']);
 		renderChannelList();
 	});
-	socket.on('add user failed', (data) => {
+	CONFIG.socket.on('add user failed', (data) => {
 		console.log("failed to add user");
 		renderDisplayNamePrompt(data['message']);
 	});
-	socket.on('channel added', (data) => {
-		channels.push(data['channel_name']);
+	CONFIG.socket.on('channel added', (data) => {
+		//channels.push(data['channel_name']);
+		CONFIG.addChannel(data['channel_name']);
 		renderChannelList();
 	});
-	socket.on('add channel failed', (data) => {
+	CONFIG.socket.on('add channel failed', (data) => {
 		bootbox.alert(data['message']);
 	});
-	socket.on('channel joined', (data) => {
-		console.log("channel joined with data: ");
-		console.log(data);
-		current_channel = data['channel_name'];
+	CONFIG.socket.on('channel joined', (data) => {
+		//current_channel = data['channel_name'];
+		CONFIG.setCurrentChannel(data['channel_name']);
 		renderMessages(data['messages']);
 	});
-	socket.on('send message to clients', (data) => {
+	CONFIG.socket.on('send message to clients', (data) => {
   		const message_area = document.querySelector('#messages-window');
 		const msg = data['message'];
 		message_area.innerHTML += message_template(
 				{'sender' : msg['sender'], 'timestamp' : msg['timestamp'], 'content' : msg['content']});
 		document.querySelector("#main-window").scrollBy(0, 100)
 	});
-	socket.on('channel left', (data) => {
-		console.log('chnnael left received by client');
-		console.log(data);
+	CONFIG.socket.on('channel left', (data) => {
+		CONFIG.setCurrentChannel(null);
 		const channel_name = data['channel_name'];
 		const join_button = document.querySelector(`.join-button[data-channel=${channel_name}]`);
 		join_button.disabled = false;
@@ -94,7 +97,7 @@ function addDOMListeners() {
 	const new_channel_input = document.querySelector("#new-channel-input")
 	add_channel_btn.onclick = () => {
 		const channel_name = new_channel_input.value;
-		socket.emit('add channel', {channel_name: channel_name});
+		CONFIG.socket.emit('add channel', {channel_name: channel_name});
 		new_channel_input.value = '';
 	}
 
@@ -123,8 +126,8 @@ function sendMessage() {
 	const message_input = document.querySelector("#message-input");
 
 	const message = message_input.value;
-	socket.emit('send message to server', 
-		{message: message, channel: current_channel, display_name: display_name});
+	CONFIG.socket.emit('send message to server', 
+		{message: message, channel: CONFIG.current_channel, display_name: CONFIG.display_name});
 	message_input.value = '';
 }
 
@@ -148,26 +151,26 @@ function resizeInterface() {
 	message_input.style.width = `${main_window.offsetWidth 
 		- attach_button.offsetWidth - send_button.offsetWidth - 10}px`
 
-	main_window.scrollTo(0, main_window.offsetHeight); 
+	main_window.scrollTo(0, main_window.offsetHeight+1000); 
 }
 function renderChannelList() {
 	const channel_list = document.querySelector('#channels')
 	channel_list.innerHTML = '';
-	channels.forEach(ch => {
+	CONFIG.channels.forEach(ch => {
 		let channel = channel_template({'channel_name' : ch});	
 		channel_list.innerHTML += channel;
 		//join handler
 		document.querySelectorAll('.join-button').forEach(button => {
-			if (button.dataset.channel == current_channel)
+			if (button.dataset.channel === CONFIG.current_channel)
 				button.disabled = true;
 
 			button.onclick = () => {
 				//leave current channel
-				if (current_channel)
-					socket.emit('leave channel', {channel_name: current_channel, display_name: display_name});
+				if (CONFIG.current_channel)
+					CONFIG.socket.emit('leave channel', {channel_name: CONFIG.current_channel, display_name: CONFIG.display_name});
 				//join new channel
-				socket.emit('join channel', 
-					{channel_name: button.dataset.channel, display_name: display_name});
+				CONFIG.socket.emit('join channel', 
+					{channel_name: button.dataset.channel, display_name: CONFIG.display_name});
 				button.disabled = true;
 				}
 			});
