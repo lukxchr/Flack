@@ -1,0 +1,39 @@
+#sidebar {
+  background-color: #000000;
+  color: #FFFFFF;
+  overflow: scroll;
+  height: 100px;
+}
+
+#sidebar-right {
+  background-color: #000000;
+  color: #FFFFFF;
+  overflow: scroll;
+}
+
+#main-window {
+  background-color: #FFFFFF;
+  overflow: scroll;
+}
+
+#message-bar {
+  position: fixed;
+  bottom: 0px;
+  right: 0px;
+  width: 1000px;
+  height: 25px
+}
+
+#channels { 
+  padding-left: 0; 
+  list-style: none;
+}
+
+.message {
+  background-color: lightgrey;
+  width: 100%;
+  border: 1px solid black;
+  margin: 2px;
+  padding: 2px;
+  border-radius: 3px;
+}

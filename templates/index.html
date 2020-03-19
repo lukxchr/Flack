@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Flack</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="static/style.css">
+</head>
+<body>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-2" id="sidebar">
+				<br>
+				<h5>Channels:</h5>
+				<input type="text" id="new-channel-input" placeholder="New channel name">
+				<button id="add-channel">Add Channel</button>
+				<br>
+				<ul id="channels">
+					<li>No active channels at the momement.</li>	
+				</ul>
+				<hr>
+				<button id="log-out-button">Leave Flack</button>
+			</div>
+			<div class="col-8" id="main-window">
+				<div class="" id="message-bar">	
+					<input type="text" id="message-input" placeholder="Your message...">
+					<button id="attach-button">Attach</button>
+					<button id="send-button">Send</button>
+				</div>
+				<div id="messages-window">
+					<h1>Choose channel to send and receive messages.</h1>
+				</div>
+			</div>
+
+			<div class="col-2" id="sidebar-right">
+				<h1>Rigt bar</h1>
+			</div>
+		</div>
+	</div>
+
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+    <!-- Bootbox -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootbox.js/5.4.0/bootbox.min.js"></script>
+    <!-- Handlebars -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.0.11/handlebars.min.js"></script>
+    <!-- socket.io -->
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script>
+    <!-- Other scripts -->
+    <script type="module" src="static/main.js"></script>
+
+</body>
+</html>
+
