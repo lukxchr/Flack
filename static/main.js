@@ -11,7 +11,7 @@ const CONFIG = new Config();
 
 //templates
 //const message_template = Handlebars.compile('<div style="font-size: 4_0px"><strong>{{ sender }}</strong>@{{ timestamp }}: {{ content }}</div>');
-const channel_template = Handlebars.compile('<li>{{ channel_name }} <button class="join-button" data-channel={{ channel_name }}>Join</button></li>');
+const channel_template = Handlebars.compile('<li>{{ channel_name }} <button class="join-button btn-sm btn-primary" data-channel={{ channel_name }}>Join</button></li>');
 const message_template = Handlebars.compile('<div class="message"><strong>{{ sender }}</strong>@{{ timestamp }}<div>{{ content }}</div></div>');
 
 

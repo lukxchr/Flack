@@ -9,12 +9,12 @@ class Channel():
 		self.users = set()
 	def add_user(self, display_name):
 		self.users.add(display_name)
-		message = Message(f"{display_name} has joined", "admin")
-		self.messages.append(message)
+		#message = Message(f"{display_name} has joined", "admin")
+		#self.messages.append(message)
 	def remove_user(self, display_name):
 		self.users.discard(display_name)
-		message = Message(f"{display_name} has left", "admin")
-		self.messages.append(message)
+		#message = Message(f"{display_name} has left", "admin")
+		#self.messages.append(message)
 	def add_message(self, message):
 		self.messages.append(message)
 	def __eq__(self, other):

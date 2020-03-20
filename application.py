@@ -52,10 +52,14 @@ def add_channel(data):
 @socketio.on('join channel')
 def join_channel(data):
 	channel_name = data["channel_name"]
+	display_name = data['display_name']
 	join_room(channel_name)
 	channel = next(ch for ch in channels if ch == channel_name)
-	channel.add_user(data['display_name'])
+	channel.add_user(display_name)
 	#print([m.serialize() for m in channel.messages])
+	#message = Message(f'{display_name} has joined', 'admin')
+	send_message({'message' : f'{display_name} has joined', 'channel' : channel_name, 'display_name' : 'admin'})
+
 	emit('channel joined', 
 		{'messages': [m.serialize() for m in channel.messages], 
 		'channel_name' : channel_name})
@@ -67,6 +71,7 @@ def leave_channel(data):
 	leave_room(channel_name)
 	channel = next(ch for ch in channels if ch == channel_name)
 	channel.remove_user(data['display_name'])
+	send_message({'message' : f'{client_ids[request.sid]} has left', 'channel' : channel_name, 'display_name' : 'admin'})
 	emit('channel left', {'channel_name': channel_name})
 
 @socketio.on('send message to server')
