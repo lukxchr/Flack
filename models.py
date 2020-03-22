@@ -2,19 +2,45 @@ from collections import namedtuple
 from collections import deque
 from datetime import datetime
 
+class User():
+	def __init__(self, display_name, token):
+		self.display_name = display_name
+		self.token = token
+		self.joined_channels = []
+	def join_channel(self, channel):
+		if channel in self.joined_channels:
+			raise Exception(f'User {self.display_name} already in channel {channel.name}')
+		self.joined_channels.append(channel)
+	def leave_channel(self, channel):
+		try:
+			self.joined_channels.remove(channel)
+		except:
+			raise Exception(f'User {self.display_name} not in channel {channel.name}')
+	def update_token(self, token):
+		self.token = token
+	def serialize(self):
+		return {'display_name' : self.display_name, 'token': self.token, 
+		'joined_channels' : [ch.name for ch in self.joined_channels]}
+	def __eq__(self, other):
+		if type(other) == str:
+			return self.display_name == other
+		else:
+			return self.display_name == other.display_name
+	
+
 class Channel():
 	def __init__(self, name):
 		self.name = name
 		self.messages = deque(maxlen=100)
-		self.users = set()
-	def add_user(self, display_name):
-		self.users.add(display_name)
-		#message = Message(f"{display_name} has joined", "admin")
-		#self.messages.append(message)
-	def remove_user(self, display_name):
-		self.users.discard(display_name)
-		#message = Message(f"{display_name} has left", "admin")
-		#self.messages.append(message)
+		#self.users = set()
+	# def add_user(self, display_name):
+	# 	self.users.add(display_name)
+	# 	#message = Message(f"{display_name} has joined", "admin")
+	# 	#self.messages.append(message)
+	# def remove_user(self, display_name):
+	# 	self.users.discard(display_name)
+	# 	#message = Message(f"{display_name} has left", "admin")
+	# 	#self.messages.append(message)
 	def add_message(self, message):
 		self.messages.append(message)
 	def __eq__(self, other):
@@ -23,7 +49,7 @@ class Channel():
 		else:
 			return self.name == other.name 
 	def __repr__(self):
-		return f"Channel: {self.name} | # users: {len(self.users)} | # messages: {len(self.messages)}"
+		return f"Channel: {self.name} | # messages: {len(self.messages)}"
 
 
 class Message():

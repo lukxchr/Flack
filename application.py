@@ -4,14 +4,15 @@ from flask_socketio import SocketIO, emit, join_room, leave_room, disconnect
 from string import ascii_lowercase, digits
 import re
 from random import choices
-from models import Channel, Message
+from models import Channel, Message, User
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 socketio = SocketIO(app, always_connect=False)
 
-users = set()
-client_ids = {} #client id : display name
+
+users = []
+#client_ids = {} #client id : display name
 channels = []
 
 @app.route("/")
@@ -21,17 +22,32 @@ def index():
 @socketio.on("add user")
 def add_user(data):
 	display_name = data['display_name']
-	if display_name in users:
-		emit("add user failed", {'display_name' : display_name, 
-			'message' : 'This display name is already in use'})
-	elif not re.match('^[a-z0-9_-]{3,15}$', display_name):
-		emit("add user failed", {'display_name' : display_name, 
-			'message' : 'Invalid display name. Please use between 3 and 15 (letters, digits, _ or -)'})
+	token = data.get('token')
+	user = next((user for user in users if user.display_name == display_name), None)
+	#user rejoins
+	if token and user:
+		if user.token != token:
+			emit('add user failed', {'display_name' : display_name, 
+				'message' : f'Failed to authenticate. Please choose a different display name.'})
+		else:
+			user.update_token(request.sid)
+			emit("user added", {'user' : user.serialize(), 
+				'channels' : [ch.name for ch in channels]})
+			emit('announce users', {'users' : [user.display_name for user in users]}, broadcast=True)
+	#new user
 	else:
-		users.add(display_name)
-		client_ids[request.sid] = display_name
-		emit("user added", {'display_name' : display_name, 
-			'channels' : [ch.name for ch in channels]})
+		if display_name in users:
+			emit("add user failed", {'display_name' : display_name, 
+				'message' : 'This display name is already in use'})
+		elif not re.match('^[a-z0-9_-]{3,15}$', display_name):
+			emit("add user failed", {'display_name' : display_name, 
+				'message' : 'Invalid display name. Please use between 3 and 15 (letters, digits, _ or -)'})
+		else: 
+			user = User(display_name, request.sid)
+			users.append(user)
+			emit("user added", {'user' : user.serialize(), 
+				'channels' : [ch.name for ch in channels]})
+			emit('announce users', {'users' : [user.display_name for user in users]}, broadcast=True)
 
 @socketio.on('add channel')
 def add_channel(data):
@@ -52,13 +68,14 @@ def add_channel(data):
 @socketio.on('join channel')
 def join_channel(data):
 	channel_name = data["channel_name"]
-	display_name = data['display_name']
+	#display_name = data['display_name']
 	join_room(channel_name)
 	channel = next(ch for ch in channels if ch == channel_name)
-	channel.add_user(display_name)
+	user = next(user for user in users if user.token == request.sid)
+	user.join_channel(channel)
 	#print([m.serialize() for m in channel.messages])
 	#message = Message(f'{display_name} has joined', 'admin')
-	send_message({'message' : f'{display_name} has joined', 'channel' : channel_name, 'display_name' : 'admin'})
+	send_message({'message' : f'{user.display_name} has joined', 'channel' : channel_name, 'display_name' : 'admin'})
 
 	emit('channel joined', 
 		{'messages': [m.serialize() for m in channel.messages], 
@@ -70,8 +87,9 @@ def leave_channel(data):
 	channel_name = data["channel_name"]
 	leave_room(channel_name)
 	channel = next(ch for ch in channels if ch == channel_name)
-	channel.remove_user(data['display_name'])
-	send_message({'message' : f'{client_ids[request.sid]} has left', 'channel' : channel_name, 'display_name' : 'admin'})
+	user = next(user for user in users if user.token == request.sid)
+	user.leave_channel(channel)
+	send_message({'message' : f'{user.display_name} has left', 'channel' : channel_name, 'display_name' : 'admin'})
 	emit('channel left', {'channel_name': channel_name})
 
 @socketio.on('send message to server')
@@ -87,22 +105,27 @@ def send_message(data):
 	emit('send message to clients', {'message' : message.serialize()}, 
 		room=channel_name, broadcast=True)
 
-@socketio.on('rejoin')
-def rejoin(data):
-	display_name = data['display_name']
-	prev_id = data['previous_client_id']
-	prev_display_name = client_ids.get(prev_id)
-	if display_name in users and prev_display_name != display_name:
-		emit("add user failed", {'display_name' : display_name, 
-			'message' : 'Authentication failed. Please use a different display name'})
-	else:
-		emit("user added", {'display_name' : display_name, 
-			'channels' : [ch.name for ch in channels]})
-		joined_channels = [ch for ch in channels if display_name in ch.users]
-		for ch in joined_channels:
-			leave_room(ch.name, sid=prev_id)
-			join_room(ch.name)
-			emit('channel joined', {'messages': [m.serialize() for m in ch.messages], 'channel_name' : ch.name})
+# @socketio.on('rejoin')
+# def rejoin(data):
+# 	display_name = data['display_name']
+# 	prev_id = data['previous_client_id']
+# 	prev_display_name = client_ids.get(prev_id)
+# 	if prev_display_name != None and  display_name in users and prev_display_name != display_name:
+# 		print(f"rejoin auth failed for: {display_name}")
+# 		print(f"prev display name: {prev_display_name}")
+# 		emit("add user failed", {'display_name' : display_name, 
+# 			'message' : 'Authentication failed. Please use a different display name'})
+# 	else:
+# 		client_ids[request.sid] = display_name
+# 		emit("user added", {'display_name' : display_name, 
+# 			'channels' : [ch.name for ch in channels]})
+# 		emit('announce users', {'users' : list(users)}, broadcast=True)
+# 		joined_channels = [ch for ch in channels if display_name in ch.users]
+# 		for ch in joined_channels:
+# 			leave_room(ch.name, sid=prev_id)
+# 			join_room(ch.name)
+# 			emit('channel joined', {'messages': [m.serialize() for m in ch.messages], 'channel_name' : ch.name})
+# 	print(f"rejon finished, users: {users}")
 
 
 
@@ -115,11 +138,15 @@ def connect():
 @socketio.on('disconnect')
 def disconnect():
 	print(f"{request.sid} disconnected")
-	display_name = client_ids.get(request.sid)
-	users.discard(display_name)
-	joined_channels = [ch for ch in channels if display_name in ch.users]
-	for ch in joined_channels:
-		ch.remove_user(display_name)
+	user = next((user for user in users if user.token == request.sid), None)
+	if user:
+		for ch in user.joined_channels:
+			send_message({'message' : f'{user.display_name} has left', 'channel' : ch.name, 'display_name' : 'admin'})
+		users.remove(user)
+		emit('announce users', {'users' : [user.display_name for user in users]}, broadcast=True)
+
+
+
 
 if __name__ == '__main__':
 	socketio.run(app, debug=True)

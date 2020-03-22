@@ -1,12 +1,12 @@
 #sidebar {
-  background-color: #000000;
+  background-color: grey;
   color: #FFFFFF;
   overflow: scroll;
   height: 100px;
 }
 
 #sidebar-right {
-  background-color: #000000;
+  background-color: grey;
   color: #FFFFFF;
   overflow: scroll;
 }
@@ -36,4 +36,8 @@
   margin: 2px;
   padding: 2px;
   border-radius: 3px;
+}
+
+.icon {
+  color: red;
 }

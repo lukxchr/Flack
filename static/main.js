@@ -13,6 +13,8 @@ const CONFIG = new Config();
 //const message_template = Handlebars.compile('<div style="font-size: 4_0px"><strong>{{ sender }}</strong>@{{ timestamp }}: {{ content }}</div>');
 const channel_template = Handlebars.compile('<li>{{ channel_name }} <button class="join-button btn-sm btn-primary" data-channel={{ channel_name }}>Join</button></li>');
 const message_template = Handlebars.compile('<div class="message"><strong>{{ sender }}</strong>@{{ timestamp }}<div>{{ content }}</div></div>');
+// const user_template = Handlebars.compile('<li>{{ display_name }} <button class="priv-msg-btn btn-sm btn-primary" data-user={{ display_name }}>Priv</button></li>');
+const user_template = Handlebars.compile('<li data-user={{ display_name }}>{{ display_name }}<img class="icon priv-msg-icon" src="static/icons/message-dots.svg" alt="send priv msg"></li>');
 
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -23,6 +25,11 @@ document.addEventListener('DOMContentLoaded', () => {
     CONFIG.socket.on('connect', () => {
     	addSocketIOListeners();
     	if (CONFIG.display_name) {
+    		CONFIG.socket.emit('add user', {display_name: CONFIG.display_name, token: CONFIG.token});
+
+
+
+    		return;
     		console.log("config loaded from localStorage")
     		console.log(CONFIG);
     		CONFIG.socket.emit('rejoin', 
@@ -30,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     	} else {
     		renderDisplayNamePrompt();
     	}
-    	CONFIG.setClientID(CONFIG.socket.io.engine.id);
+    	
     });
 
 
@@ -55,7 +62,9 @@ function addSocketIOListeners() {
 	CONFIG.socket.on('user added', (data) => {
 		//display_name = data['display_name'];
 		//channels = data['channels'];
-		CONFIG.setDisplayName(data['display_name']);
+		CONFIG.setDisplayName(data['user']['display_name']);
+		CONFIG.setUserToken(data['user']['token'])
+		CONFIG.setJoinedChannels(data['user']['joined_channels']);
 		CONFIG.setChannels(data['channels']);
 		renderChannelList();
 	});
@@ -89,6 +98,15 @@ function addSocketIOListeners() {
 		const join_button = document.querySelector(`.join-button[data-channel=${channel_name}]`);
 		join_button.disabled = false;
 		//document.querySelector('#messages-window').innerHTML = '<h1>Choose channel to send and receive messages.</h1>';
+	});
+	CONFIG.socket.on('announce users', (data) => {
+		console.log('announce users received by client: ' + data['users']);
+		const online_list = document.querySelector('#online-list');
+		online_list.innerHTML = '';
+		data['users'].forEach(display_name => {
+			const user = user_template({display_name: display_name});
+			online_list.innerHTML += user;
+		})
 	});
 }
 
@@ -170,10 +188,10 @@ function renderChannelList() {
 			button.onclick = () => {
 				//leave current channel
 				if (CONFIG.current_channel)
-					CONFIG.socket.emit('leave channel', {channel_name: CONFIG.current_channel, display_name: CONFIG.display_name});
+					CONFIG.socket.emit('leave channel', {channel_name: CONFIG.current_channel, display_name: CONFIG.display_name, token: CONFIG.token});
 				//join new channel
 				CONFIG.socket.emit('join channel', 
-					{channel_name: button.dataset.channel, display_name: CONFIG.display_name});
+					{channel_name: button.dataset.channel, display_name: CONFIG.display_name, token: CONFIG.token});
 				button.disabled = true;
 				}
 			});
