@@ -1,18 +1,18 @@
 #sidebar {
-  background-color: grey;
+  background-color: #1a535c;
   color: #FFFFFF;
   overflow: scroll;
   height: 100px;
 }
 
 #sidebar-right {
-  background-color: grey;
+  background-color: #1a535c;
   color: #FFFFFF;
   overflow: scroll;
 }
 
 #main-window {
-  background-color: #FFFFFF;
+  background-color: #f7fff7;
   overflow: scroll;
 }
 
@@ -30,7 +30,7 @@
 }
 
 .message {
-  background-color: lightgrey;
+  background-color: #f7fff7;
   width: 100%;
   border: 1px solid black;
   margin: 2px;
@@ -40,4 +40,42 @@
 
 .icon {
   color: red;
+}
+
+li.current-channel {
+  color: #ff6b6b;
+}
+
+li.joined-channel:hover{
+  font-weight: bold;
+  cursor: pointer;
+}
+
+li.joined-channel>.join-ch-icon {
+  display: none;
+}
+
+li.joined-channel>.leave-ch-icon {
+  display: initial;
+}
+
+li:not(.joined-channel)>.join-ch-icon {
+  display: initial;
+}
+
+li:not(.joined-channel)>.leave-ch-icon {
+  display: none;
+}
+
+
+.icon:hover {
+  height: 1.5em;
+}
+
+.icon {
+  height: 1em;
+}
+
+span.channel-name {
+
 }

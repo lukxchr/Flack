@@ -31,6 +31,8 @@ def add_user(data):
 				'message' : f'Failed to authenticate. Please choose a different display name.'})
 		else:
 			user.update_token(request.sid)
+			for ch in user.joined_channels:
+				join_room(ch.name)
 			emit("user added", {'user' : user.serialize(), 
 				'channels' : [ch.name for ch in channels]})
 			emit('announce users', {'users' : [user.display_name for user in users]}, broadcast=True)
@@ -92,8 +94,18 @@ def leave_channel(data):
 	send_message({'message' : f'{user.display_name} has left', 'channel' : channel_name, 'display_name' : 'admin'})
 	emit('channel left', {'channel_name': channel_name})
 
+@socketio.on('load channel')
+def load_channel(data):
+	channel_name = data['channel_name']
+	channel = next((ch for ch in channels if ch == channel_name), None)
+	if channel:
+		emit('channel loaded', {'channel_name' : channel_name, 'messages' : [m.serialize() for m in channel.messages]})
+	else: 
+		emit('load channel failed', {'channel_name' : channel_name, 'message' : 'Channel does not exist'})
+
 @socketio.on('send message to server')
 def send_message(data):
+	print("send msg tos erver called ", data)
 	message_text = data['message']
 	channel_name = data['channel']
 	sender = data['display_name']
@@ -104,28 +116,6 @@ def send_message(data):
 
 	emit('send message to clients', {'message' : message.serialize()}, 
 		room=channel_name, broadcast=True)
-
-# @socketio.on('rejoin')
-# def rejoin(data):
-# 	display_name = data['display_name']
-# 	prev_id = data['previous_client_id']
-# 	prev_display_name = client_ids.get(prev_id)
-# 	if prev_display_name != None and  display_name in users and prev_display_name != display_name:
-# 		print(f"rejoin auth failed for: {display_name}")
-# 		print(f"prev display name: {prev_display_name}")
-# 		emit("add user failed", {'display_name' : display_name, 
-# 			'message' : 'Authentication failed. Please use a different display name'})
-# 	else:
-# 		client_ids[request.sid] = display_name
-# 		emit("user added", {'display_name' : display_name, 
-# 			'channels' : [ch.name for ch in channels]})
-# 		emit('announce users', {'users' : list(users)}, broadcast=True)
-# 		joined_channels = [ch for ch in channels if display_name in ch.users]
-# 		for ch in joined_channels:
-# 			leave_room(ch.name, sid=prev_id)
-# 			join_room(ch.name)
-# 			emit('channel joined', {'messages': [m.serialize() for m in ch.messages], 'channel_name' : ch.name})
-# 	print(f"rejon finished, users: {users}")
 
 
 

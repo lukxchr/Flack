@@ -26,6 +26,13 @@ export default class {
 		this.joined_channels = joined_channels;
 		localStorage.setItem('joined_channels', JSON.stringify(joined_channels));
 	}
+	addJoinedChannel(channel) {
+		this.joined_channels.push(channel);
+		localStorage.setItem('joined_channels', JSON.stringify(this.joined_channels));
+	}
+	LeaveChannel(channel) {
+		this.joined_channels = this.joined_channels.filter(x => x != channel);
+	}
 	setCurrentChannel(current_channel) {
 		this.current_channel = current_channel;
 		localStorage.setItem('current_channel', current_channel);

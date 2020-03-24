@@ -1,8 +1,8 @@
-import Config from './config.js';
+import Globals from './config.js';
 
 //Config constructor gets gloabals from localStorage if available
 //and connects to web socket 
-const CONFIG = new Config();
+const GLOBALS = new Globals();
 
 //globals declarations
 // var display_name, current_channel, socket;
@@ -11,10 +11,10 @@ const CONFIG = new Config();
 
 //templates
 //const message_template = Handlebars.compile('<div style="font-size: 4_0px"><strong>{{ sender }}</strong>@{{ timestamp }}: {{ content }}</div>');
-const channel_template = Handlebars.compile('<li>{{ channel_name }} <button class="join-button btn-sm btn-primary" data-channel={{ channel_name }}>Join</button></li>');
+//const channel_template = Handlebars.compile('<li>{{ channel_name }} <button class="join-button btn-sm btn-primary" data-channel={{ channel_name }}>Join</button></li>');
+const channel_template = Handlebars.compile('<li class="channel" data-channel={{ channel_name }}><span class="channel-name-btn" data-channel={{ channel_name }}>{{ channel_name }} </span><img class="icon join-ch-icon" src="static/icons/user-plus.svg" alt="join channel" data-channel={{ channel_name }}><img class="icon leave-ch-icon" src="static/icons/user-minus.svg" alt="leave channel" data-channel={{ channel_name }}></li>');
 const message_template = Handlebars.compile('<div class="message"><strong>{{ sender }}</strong>@{{ timestamp }}<div>{{ content }}</div></div>');
-// const user_template = Handlebars.compile('<li>{{ display_name }} <button class="priv-msg-btn btn-sm btn-primary" data-user={{ display_name }}>Priv</button></li>');
-const user_template = Handlebars.compile('<li data-user={{ display_name }}>{{ display_name }}<img class="icon priv-msg-icon" src="static/icons/message-dots.svg" alt="send priv msg"></li>');
+const user_template = Handlebars.compile('<li data-user={{ display_name }}>{{ display_name }} <img class="icon priv-msg-icon" src="static/icons/message-dots.svg" alt="send priv msg"></li>');
 
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -22,18 +22,11 @@ document.addEventListener('DOMContentLoaded', () => {
     //socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
     resizeInterface();
     addDOMListeners();
-    CONFIG.socket.on('connect', () => {
+    GLOBALS.socket.on('connect', () => {
     	addSocketIOListeners();
-    	if (CONFIG.display_name) {
-    		CONFIG.socket.emit('add user', {display_name: CONFIG.display_name, token: CONFIG.token});
-
-
-
-    		return;
-    		console.log("config loaded from localStorage")
-    		console.log(CONFIG);
-    		CONFIG.socket.emit('rejoin', 
-    			{display_name: CONFIG.display_name, previous_client_id: CONFIG.clientID});
+    	if (GLOBALS.display_name) {
+    		console.log(GLOBALS);
+    		GLOBALS.socket.emit('add user', {display_name: GLOBALS.display_name, token: GLOBALS.token});
     	} else {
     		renderDisplayNamePrompt();
     	}
@@ -53,53 +46,72 @@ function renderDisplayNamePrompt (message='') {
     	closeButton: false,
     	onEscape: false,
     	callback: (res) => {
-    		CONFIG.socket.emit('add user', {display_name: res});
+    		GLOBALS.socket.emit('add user', {display_name: res});
     	}
     });
 }
 
 function addSocketIOListeners() {
-	CONFIG.socket.on('user added', (data) => {
+	GLOBALS.socket.on('user added', (data) => {
 		//display_name = data['display_name'];
 		//channels = data['channels'];
-		CONFIG.setDisplayName(data['user']['display_name']);
-		CONFIG.setUserToken(data['user']['token'])
-		CONFIG.setJoinedChannels(data['user']['joined_channels']);
-		CONFIG.setChannels(data['channels']);
+		GLOBALS.setDisplayName(data['user']['display_name']);
+		GLOBALS.setUserToken(data['user']['token'])
+		GLOBALS.setJoinedChannels(data['user']['joined_channels']);
+		GLOBALS.setChannels(data['channels']);
 		renderChannelList();
+		if (GLOBALS.current_channel)
+			GLOBALS.socket.emit('load channel', {channel_name: GLOBALS.current_channel});
 	});
-	CONFIG.socket.on('add user failed', (data) => {
+	GLOBALS.socket.on('add user failed', (data) => {
 		console.log("failed to add user");
 		renderDisplayNamePrompt(data['message']);
 	});
-	CONFIG.socket.on('channel added', (data) => {
+	GLOBALS.socket.on('channel added', (data) => {
 		//channels.push(data['channel_name']);
-		CONFIG.addChannel(data['channel_name']);
+		GLOBALS.addChannel(data['channel_name']);
 		renderChannelList();
 	});
-	CONFIG.socket.on('add channel failed', (data) => {
+	GLOBALS.socket.on('add channel failed', (data) => {
 		bootbox.alert(data['message']);
 	});
-	CONFIG.socket.on('channel joined', (data) => {
+	GLOBALS.socket.on('channel joined', (data) => {
 		//current_channel = data['channel_name'];
-		CONFIG.setCurrentChannel(data['channel_name']);
+		const channel_name = data['channel_name'];
+		GLOBALS.setCurrentChannel(channel_name);
 		renderMessages(data['messages']);
+		document.querySelector(`li.channel[data-channel=${channel_name}]`).classList.add("joined-channel");
+		GLOBALS.socket.emit('load channel', {channel_name: channel_name});
 	});
-	CONFIG.socket.on('send message to clients', (data) => {
+	GLOBALS.socket.on('send message to clients', (data) => {
+		console.log("rec msg from server");
   		const message_area = document.querySelector('#messages-window');
 		const msg = data['message'];
 		message_area.innerHTML += message_template(
 				{'sender' : msg['sender'], 'timestamp' : msg['timestamp'], 'content' : msg['content']});
-		document.querySelector("#main-window").scrollBy(0, 100)
+		document.querySelector("#main-window").scrollBy(0, 1000)
 	});
-	CONFIG.socket.on('channel left', (data) => {
-		CONFIG.setCurrentChannel(null);
+	GLOBALS.socket.on('channel left', (data) => {
+		GLOBALS.setCurrentChannel(null);
 		const channel_name = data['channel_name'];
-		const join_button = document.querySelector(`.join-button[data-channel=${channel_name}]`);
-		join_button.disabled = false;
-		//document.querySelector('#messages-window').innerHTML = '<h1>Choose channel to send and receive messages.</h1>';
+		document.querySelector(`li.channel[data-channel=${channel_name}]`).classList.remove("joined-channel", 'current-channel');
+		document.querySelector('#messages-window').innerHTML = '<h1>Choose channel to send and receive messages.</h1>';
 	});
-	CONFIG.socket.on('announce users', (data) => {
+	GLOBALS.socket.on('channel loaded', (data) => {
+		const channel_name = data['channel_name'];
+		GLOBALS.setCurrentChannel(channel_name);
+		renderMessages(data['messages']);
+		const current_channel = document.querySelector(`li.current-channel`);
+		if (current_channel)
+			current_channel.classList.remove("current-channel");
+		document.querySelector(`li.channel[data-channel=${channel_name}]`).classList.add("current-channel");
+		// const leave_icon = document.querySelector(`.leave-ch-icon[data-channel=${channel_name}]`);
+		// leave_icon.parentNode.style.color = '#ff6b6b';
+	});
+		GLOBALS.socket.on('load channel failed', (data) => {
+			bootbox.alert(data['message']);
+	});
+	GLOBALS.socket.on('announce users', (data) => {
 		console.log('announce users received by client: ' + data['users']);
 		const online_list = document.querySelector('#online-list');
 		online_list.innerHTML = '';
@@ -116,7 +128,7 @@ function addDOMListeners() {
 	const new_channel_input = document.querySelector("#new-channel-input")
 	add_channel_btn.onclick = () => {
 		const channel_name = new_channel_input.value;
-		CONFIG.socket.emit('add channel', {channel_name: channel_name});
+		GLOBALS.socket.emit('add channel', {channel_name: channel_name});
 		new_channel_input.value = '';
 	}
 
@@ -132,7 +144,7 @@ function addDOMListeners() {
 
 	//log out
 	document.querySelector("#log-out-button").onclick = () => {
-		CONFIG.clearAll();
+		GLOBALS.clearAll();
 		window.location.reload(true);
 	}
 
@@ -143,12 +155,14 @@ function addDOMListeners() {
 }
 
 function sendMessage() {
+	console.log("sending mesage");
+	console.log(GLOBALS);
 	const send_button = document.querySelector("#send-button");
 	const message_input = document.querySelector("#message-input");
 
 	const message = message_input.value;
-	CONFIG.socket.emit('send message to server', 
-		{message: message, channel: CONFIG.current_channel, display_name: CONFIG.display_name});
+	GLOBALS.socket.emit('send message to server', 
+		{message: message, channel: GLOBALS.current_channel, display_name: GLOBALS.display_name});
 	message_input.value = '';
 }
 
@@ -161,6 +175,8 @@ function resizeInterface() {
 	const attach_button = document.querySelector("#attach-button");
 	const send_button = document.querySelector("#send-button");
 
+	const new_channel_input = document.querySelector("#new-channel-input");
+
 	//fill the whole screen
 	sidebar.style.height = `${window.innerHeight}px`;
 	main_window.style.height = `${window.innerHeight}px`;
@@ -169,35 +185,65 @@ function resizeInterface() {
 	main_window.style.height = `${window.innerHeight * 0.95}px`;
 
 	message_bar.style.width = `${main_window.offsetWidth}px`;
-	message_input.style.width = `${main_window.offsetWidth 
-		- attach_button.offsetWidth - send_button.offsetWidth - 10}px`
+	message_bar.style.left = `${sidebar.offsetWidth}px`;
+	message_input.style.width = `${main_window.offsetWidth
+		- attach_button.offsetWidth - send_button.offsetWidth - 10}px`;
+
+	new_channel_input.style.width = '80%';
 
 	main_window.scrollTo(0, main_window.offsetHeight+1000); 
 }
 function renderChannelList() {
 	const channel_list = document.querySelector('#channels')
 	channel_list.innerHTML = '';
-	CONFIG.channels.forEach(ch => {
+	GLOBALS.channels.forEach(ch => {
 		let channel = channel_template({'channel_name' : ch});	
 		channel_list.innerHTML += channel;
-		//join handler
-		document.querySelectorAll('.join-button').forEach(button => {
-			if (button.dataset.channel === CONFIG.current_channel)
-				button.disabled = true;
+		
+		if (GLOBALS.current_channel === ch)
+			document.querySelector(`li.channel[data-channel=${ch}]`).classList.add("current-channel");
 
-			button.onclick = () => {
-				//leave current channel
-				if (CONFIG.current_channel)
-					CONFIG.socket.emit('leave channel', {channel_name: CONFIG.current_channel, display_name: CONFIG.display_name, token: CONFIG.token});
-				//join new channel
-				CONFIG.socket.emit('join channel', 
-					{channel_name: button.dataset.channel, display_name: CONFIG.display_name, token: CONFIG.token});
-				button.disabled = true;
+		if (GLOBALS.joined_channels.includes(ch))
+			document.querySelector(`li.channel[data-channel=${ch}]`).classList.add("joined-channel");
+
+		//join handler
+		document.querySelectorAll('.join-ch-icon').forEach(icon => {
+			// if (GLOBALS.joined_channels.includes(icon.dataset.channel))
+			// 	icon.hidden = true;
+
+			icon.onclick = () => {
+				const channel_name = icon.dataset.channel;
+				GLOBALS.addJoinedChannel(channel_name);
+				GLOBALS.socket.emit('join channel', 
+					{channel_name: channel_name, display_name: GLOBALS.display_name, token: GLOBALS.token});
+				document.querySelector(`li.channel[data-channel=${channel_name}]`).classList.add("joined-channel");
 				}
 			});
 
+		//leave handler 
+		document.querySelectorAll('.leave-ch-icon').forEach(icon => {
+			const channel_name = icon.dataset.channel;
+			icon.onclick = () => {
+				GLOBALS.LeaveChannel(channel_name);
+				GLOBALS.socket.emit('leave channel', {channel_name: channel_name, display_name: GLOBALS.display_name, token: GLOBALS.token});
+				document.querySelector(`li.channel[data-channel=${channel_name}]`).classList.remove("joined-channel");
+				}
+			});
+
+		//load channel handler
+		document.querySelectorAll('.channel-name-btn').forEach(btn => {
+			const channel_name = btn.dataset.channel;
+			//GLOBALS.setCurrentChannel(channel_name)
+			btn.onclick = () => {
+				console.log("channel name clicked");
+				GLOBALS.socket.emit('load channel', {channel_name: channel_name});
+			}
+		});
+
 	});
 }
+
+
 
 function renderMessages(messages) {
 	const message_area = document.querySelector('#messages-window');
