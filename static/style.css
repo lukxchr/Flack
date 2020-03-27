@@ -1,52 +1,82 @@
 #sidebar {
   background-color: #1a535c;
   color: #FFFFFF;
-  overflow: scroll;
-  height: 100px;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  height: 100vh;
 }
 
 #sidebar-right {
   background-color: #1a535c;
   color: #FFFFFF;
-  overflow: scroll;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  height: 100vh;
 }
 
 #main-window {
-  background-color: #f7fff7;
-  overflow: scroll;
+  background-color: #7fff7;
+  height: 100vh;
+/*  overflow-y: scroll;
+  overflow-x: hidden;*/
+ 
+}
+
+#messages-window {
+  height: 90vh;
+  overflow-y: scroll;
+  overflow-x: hidden;
 }
 
 #message-bar {
-  position: fixed;
+  position: absolute;
   bottom: 0px;
-  right: 0px;
-  width: 1000px;
-  height: 25px
+  width: 100%;
+  /*right: 0px;*/
+  /*width: 1000px;*/
+  /*height: 10%;*/
 }
 
-#channels { 
+#message-input{
+  width: 90%;
+}
+
+#new-channel-input {
+  width: 80%;
+}
+
+
+#channels, #online-list { 
   padding-left: 0; 
   list-style: none;
 }
 
 .message {
-  background-color: #f7fff7;
+  background-color: #ffffff;
   width: 100%;
-  border: 1px solid black;
-  margin: 2px;
-  padding: 2px;
+  /*border: 1px solid black;*/
+  margin-bottom: 5px;
+  padding: 0px;
   border-radius: 3px;
+  line-height: 1.2;
+  text-align: justify;
+  text-justify: inter-word;
 }
 
-.icon {
-  color: red;
-}
+
 
 li.current-channel {
   color: #ff6b6b;
 }
 
-li.joined-channel:hover{
+
+.li:not(.joined-channel)>.channel-name-btn {
+  pointer-events: none;
+  cursor: not-allowed;
+
+}
+
+li.joined-channel>.channel-name-btn:hover{
   font-weight: bold;
   cursor: pointer;
 }
@@ -73,9 +103,8 @@ li:not(.joined-channel)>.leave-ch-icon {
 }
 
 .icon {
-  height: 1em;
+  height: 1.25em;
 }
 
-span.channel-name {
 
-}
+

@@ -12,12 +12,12 @@
 		<div class="row">
 			<div class="col-2" id="sidebar">
 				<br>
-				<h5>Channels:</h5>
+				<h5>Channels</h5>
 				<input type="text" id="new-channel-input" placeholder="New channel name">
-				<button id="add-channel" class="btn btn-primary">Add Channel</button>
+				<img id="add-channel" class="icon add-ch-icon" src="static/icons/plus.svg" alt="add channel">
 				<br>
 				<ul id="channels">
-					No active channels. You can add your channel above.	
+					<div class="spinner-grow text-light" role="status"><span class="sr-only">Loading...</span></div>
 				</ul>
 				<hr>
 				<button id="log-out-button" class="btn btn-danger">Leave Flack</button>
@@ -25,8 +25,8 @@
 			<div class="col-8" id="main-window">
 				<div class="" id="message-bar">	
 					<input type="text" id="message-input" placeholder="Your message...">
-					<button id="attach-button">Attach</button>
-					<button id="send-button">Send</button>
+					
+					<img id="send-button" class="icon send-msg-icon" src="static/icons/send.svg" alt="send message">
 				</div>
 				<div id="messages-window">
 					<h1>Choose channel to send and receive messages.</h1>
@@ -34,9 +34,10 @@
 			</div>
 
 			<div class="col-2" id="sidebar-right">
-				<h5>Online users:</h5>
+				<br>
+				<h5>Online Users</h5>
 				<ul id="online-list">
-					
+					<div class="spinner-grow text-light" role="status"><span class="sr-only">Loading...</span></div>
 				</ul>
 			</div>
 		</div>
