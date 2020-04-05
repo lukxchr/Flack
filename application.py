@@ -8,12 +8,11 @@ from models import Channel, Message, User
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
-socketio = SocketIO(app, always_connect=False)
+socketio = SocketIO(app)
 
 
 users = []
 channels = []
-private_channels = []
 
 @app.route("/")
 def index():
@@ -74,22 +73,17 @@ def add_channel(data):
 @socketio.on('join channel')
 def join_channel(data):
 	channel_name = data["channel_name"]
-	#display_name = data['display_name']
 	join_room(channel_name)
 	channel = next(ch for ch in channels if ch == channel_name)
 	user = next(user for user in users if user.token == request.sid)
 	user.join_channel(channel)
-	#print([m.serialize() for m in channel.messages])
-	#message = Message(f'{display_name} has joined', 'admin')
 	send_message({'message' : f'{user.display_name} has joined', 'channel' : channel_name, 'display_name' : 'admin'})
-
 	emit('channel joined', 
 		{'messages': [m.serialize() for m in channel.messages], 
 		'channel_name' : channel_name})
 
 @socketio.on('leave channel')
 def leave_channel(data):
-	print("leave_channel called on server")
 	channel_name = data["channel_name"]
 	leave_room(channel_name)
 	channel = next(ch for ch in channels if ch == channel_name)
@@ -109,21 +103,17 @@ def load_channel(data):
 
 @socketio.on('send message to server')
 def send_message(data):
-	print("send msg tos erver called ", data)
 	message_text = data['message']
 	channel_name = data['channel']
 	sender = data['display_name']
 	message = Message(message_text, sender)
-
 	channel = next(ch for ch in channels if ch == channel_name)
 	channel.add_message(message)
-
 	emit('send message to clients', {'message' : message.serialize()}, 
 		room=channel_name, broadcast=True)
 
 @socketio.on('send priv message to server')
 def send_priv_message(data):
-	print(f'send_priv_message: {data}')
 	sender = next((user for user in users if user == data['sender']), None)
 	receiver = next((user for user in users if user == data['receiver']), None)
 	if sender and receiver:
@@ -134,19 +124,9 @@ def send_priv_message(data):
 		emit('send priv message to clients', {'message': message.serialize(), 
 			'receiver' : receiver.display_name},
 			room=sender.token)
-	else:
-		print(f'priv message failed s{sender} / r{receiver}')
-
-
-
-@socketio.on("connect")
-def connect():
-    print('client connected ' + request.sid)
-    return True
- 
+	
 @socketio.on('disconnect')
 def disconnect():
-	print(f"{request.sid} disconnected")
 	user = next((user for user in users if user.token == request.sid), None)
 	if user:
 		for ch in user.joined_channels:
@@ -154,9 +134,5 @@ def disconnect():
 		users.remove(user)
 		emit('announce users', {'users' : [user.display_name for user in users]}, broadcast=True)
 
-
-
-
 if __name__ == '__main__':
 	socketio.run(app, debug=True)
-

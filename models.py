@@ -27,7 +27,6 @@ class User():
 		else:
 			return self.display_name == other.display_name
 	
-
 class Channel():
 	def __init__(self, name):
 		self.name = name
@@ -42,14 +41,6 @@ class Channel():
 	def __repr__(self):
 		return f"Channel: {self.name} | # messages: {len(self.messages)}"
 
-
-# class PrivateChannel(Channel):
-# 	def __init__(self, user, other_user):
-# 		super().__init__(f'priv_{user.display_name}_{other_user.display_name}')
-# 		self.user = user
-# 		self.other_user = other_user
-		
-
 class Message():
 	def __init__(self, content, sender, timestamp=datetime.utcnow()):
 		self.content = content
@@ -57,5 +48,3 @@ class Message():
 		self.timestamp = timestamp
 	def serialize(self):
 		return {"content" : self.content, "sender" : self.sender, "timestamp" : str(self.timestamp)}
-
-
