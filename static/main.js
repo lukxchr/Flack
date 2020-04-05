@@ -1,66 +1,13 @@
 import Globals from './config.js';
-
-//get globals from locals storage if available and connect to web socket 
-const GLOBALS = new Globals();
-
-//templates
-const channel_template = Handlebars.compile(`
-	<li class="channel" data-channel={{ channel_name }}>
-		<span class="channel-name-btn" data-channel={{ channel_name }}>#{{ channel_name }} </span>
-		<img class="icon join-ch-icon" src="static/icons/user-plus.svg" 
-		alt="join channel" data-channel={{ channel_name }}>
-		<img class="icon leave-ch-icon" src="static/icons/user-minus.svg" 
-		alt="leave channel" data-channel={{ channel_name }}>
-	</li>`);
-
-const message_template = Handlebars.compile(`
-	<div class="message">
-		<strong>
-			{{ sender }}
-			{{#if priv_btn}}
-			<img class="icon priv-msg-icon" src="static/icons/message-dots.svg" 
-			alt="send priv msg" data-receiver={{ sender }}>
-			{{/if}}
-		</strong>
-		@{{ timestamp }}
-		<div>{{ content }}</div>
-	</div>`);
-
-const user_template = Handlebars.compile(`
-	<li data-user={{ display_name }}>{{ display_name }} 
-		{{#if priv_btn}}
-		<img class="icon priv-msg-icon" src="static/icons/message-dots.svg" 
-		alt="send priv msg" data-receiver={{ display_name }}>
-		{{/if}}
-	</li>`);
-
-const spinner_template = Handlebars.compile(`
-	<div class="spinner-border text-light" role="status">
-	<span class="sr-only">Loading...</span></div>`);
-
-const priv_window_template = Handlebars.compile(`
-	<div class="priv-msg-container" data-receiver={{ display_name }}>
-		<div class="priv-header">
-			<strong>~{{ display_name }}</strong>
-			<img class="icon close-icon" src="static/icons/x.svg" alt="close priv">
-		</div>
-		<div class="priv-body">
-			<div class="priv-messages-area"></div>
-			<div class="priv-message-bar">
-				<input type="text" class="priv-msg-input" placeholder="Your message...">
-				<img id="priv-send-button" class="icon priv-send-msg-icon" src="static/icons/send.svg" 
-				alt="send priv message" data-receiver={{ display_name }}>
-			</div>
-		</div>
-	</div>`);
+import {channel_template, message_template, user_template, spinner_template, priv_window_template} from './templates.js'
 
 //init: try to load user from localStorage - if failed ask for new display name. Add DOM/socket.io listerners 
+const GLOBALS = new Globals();
 document.addEventListener('DOMContentLoaded', () => {
     addDOMListeners();
     GLOBALS.socket.on('connect', () => {
     	addSocketIOListeners();
     	if (GLOBALS.display_name) {
-    		console.log(GLOBALS);
     		GLOBALS.socket.emit('add user', {display_name: GLOBALS.display_name, token: GLOBALS.token});
     	} else {
     		renderDisplayNamePrompt();
@@ -77,7 +24,6 @@ function addSocketIOListeners() {
 		GLOBALS.setChannels(data['channels']);
 
 		renderChannelList();
-
 		//handle the case where user was removed from the channel on server side 
 		if (!GLOBALS.joined_channels.includes(GLOBALS.current_channel)) {
 			GLOBALS.setCurrentChannel(null);
@@ -85,7 +31,6 @@ function addSocketIOListeners() {
 			GLOBALS.socket.emit('load channel', {channel_name: GLOBALS.current_channel});
 	});
 	GLOBALS.socket.on('add user failed', (data) => {
-		console.log("failed to add user");
 		renderDisplayNamePrompt(data['message']);
 	});
 	GLOBALS.socket.on('channel added', (data) => {
@@ -103,7 +48,6 @@ function addSocketIOListeners() {
 		GLOBALS.socket.emit('load channel', {channel_name: channel_name});
 	});
 	GLOBALS.socket.on('send message to clients', (data) => {
-		console.log("rec msg from server");
   		const message_area = document.querySelector('#messages-window');
 		const msg = data['message'];
 		message_area.innerHTML += message_template(
@@ -133,7 +77,6 @@ function addSocketIOListeners() {
 		renderOnlineUsersList(data['users']);
 	});
 	GLOBALS.socket.on('send priv message to clients', (data) => {
-		//renderPrivateWindow(receiver)
 		const sender = data['message']['sender'];
 		const receiver = data['receiver'];
 		const message = message_template(
@@ -170,6 +113,23 @@ function addDOMListeners() {
 			addChannel();
 		} else if (e.target.matches('.priv-msg-icon')) {
 			renderPrivateWindow(e.target.dataset.receiver);
+		} else if (e.target.matches('.channel-name-btn')) {
+			const channel_name = e.target.dataset.channel;
+			if (!GLOBALS.joined_channels.includes(channel_name)) 
+				bootbox.alert('You need to join the channel before viewing it.');
+			else 
+				GLOBALS.socket.emit('load channel', {channel_name: channel_name});
+		} else if (e.target.matches('.join-ch-icon')) {
+			const channel_name = e.target.dataset.channel;
+			GLOBALS.addJoinedChannel(channel_name);
+			GLOBALS.socket.emit('join channel', 
+				{channel_name: channel_name, display_name: GLOBALS.display_name, token: GLOBALS.token});
+			document.querySelector(`li.channel[data-channel=${channel_name}]`).classList.add("joined-channel");
+		} else if (e.target.matches('.leave-ch-icon')) {
+			const channel_name = e.target.dataset.channel;
+			GLOBALS.leaveChannel(channel_name);
+			GLOBALS.socket.emit('leave channel', {channel_name: channel_name, display_name: GLOBALS.display_name, token: GLOBALS.token});
+			document.querySelector(`li.channel[data-channel=${channel_name}]`).classList.remove("joined-channel");
 		} else if (e.target.matches('#log-out-button')) {
 			GLOBALS.clearAll();
 			window.location.reload(true);
@@ -189,6 +149,10 @@ function addDOMListeners() {
 		} 
 	});
 }
+
+/*
+function for loading UI and other helper functions 
+*/
 
 function sendMessage() {
 	const send_button = document.querySelector("#send-button");
@@ -214,7 +178,6 @@ function addChannel() {
 	new_channel_input.value = '';
 }
 
-//functions for loading UI elements 
 function renderChannelList() {
 	const channel_list = document.querySelector('#channels')
 	channel_list.innerHTML = '';
@@ -225,45 +188,10 @@ function renderChannelList() {
 			document.querySelector(`li.channel[data-channel=${ch}]`).classList.add("current-channel");
 		if (GLOBALS.joined_channels.includes(ch))
 			document.querySelector(`li.channel[data-channel=${ch}]`).classList.add("joined-channel");
-
-		//join handler
-		document.querySelectorAll('.join-ch-icon').forEach(icon => {
-			icon.onclick = () => {
-				const channel_name = icon.dataset.channel;
-				GLOBALS.addJoinedChannel(channel_name);
-				GLOBALS.socket.emit('join channel', 
-					{channel_name: channel_name, display_name: GLOBALS.display_name, token: GLOBALS.token});
-				document.querySelector(`li.channel[data-channel=${channel_name}]`).classList.add("joined-channel");
-				}
-			});
-
-		//leave handler 
-		document.querySelectorAll('.leave-ch-icon').forEach(icon => {
-			const channel_name = icon.dataset.channel;
-			icon.onclick = () => {
-				GLOBALS.LeaveChannel(channel_name);
-				GLOBALS.socket.emit('leave channel', {channel_name: channel_name, display_name: GLOBALS.display_name, token: GLOBALS.token});
-				document.querySelector(`li.channel[data-channel=${channel_name}]`).classList.remove("joined-channel");
-				}
-			});
-
-		//load channel handler
-		document.querySelectorAll('.channel-name-btn').forEach(btn => {
-			const channel_name = btn.dataset.channel;
-			btn.onclick = () => {
-				if (!GLOBALS.joined_channels.includes(channel_name)) {
-					bootbox.alert('You need to join the channel before viewing it.');
-					return;
-				}
-				console.log("channel name clicked");
-				GLOBALS.socket.emit('load channel', {channel_name: channel_name});
-			}
-		});
 	});
 }
 
 function renderOnlineUsersList(users) {
-	console.log('announce users received by client: ' + users);
 	const online_list = document.querySelector('#online-list');
 	online_list.innerHTML = '';
 	users.forEach(display_name => {
@@ -301,5 +229,3 @@ function renderMessages(messages) {
 	});
 	message_area.scrollBy(0, message_area.scrollHeight); 
 }
-
-

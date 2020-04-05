@@ -1,11 +1,6 @@
-/*body {
-  font-family: sans-serif;
-}*/
-
-
 #sidebar {
   background-color: #1a535c;
-  color: #f7fff7;
+  color: #FAFAFA;
   overflow-y: scroll;
   overflow-x: hidden;
   height: 100vh;
@@ -13,24 +8,21 @@
 
 #sidebar-right {
   background-color: #1a535c;
-  color: #f7fff7;
+  color: #FAFAFA;
   overflow-y: scroll;
   overflow-x: hidden;
   height: 100vh;
 }
 
 #main-window {
-  background-color: #7fff7;
+  background-color: #FAFAFA;
   height: 100vh;
-  background-color: #f7fff7;
-/*  overflow-y: scroll;
-  overflow-x: hidden;*/
- 
+  background-color: #FAFAFA;
 }
 
 #messages-window {
   height: 90vh;
-  background-color: #f7fff7;
+  background-color: #FAFAFA;
   overflow-y: scroll;
   overflow-x: hidden;
 }
@@ -39,10 +31,7 @@
   position: absolute;
   bottom: 0px;
   width: 100%;
-  background-color: #f7fff7;
-  /*right: 0px;*/
-  /*width: 1000px;*/
-  /*height: 10%;*/
+  background-color: #FAFAFA;
 }
 
 #message-input{
@@ -60,9 +49,8 @@
 }
 
 .message {
-  background-color: #f7fff7;
+  background-color: #FAFAFA;
   width: 100%;
-  /*border: 1px solid black;*/
   margin-bottom: 5px;
   padding: 0px;
   border-radius: 3px;
@@ -119,10 +107,6 @@ li:not(.joined-channel)>.leave-ch-icon {
   height: 2em;
 }
 
-/*.priv-send-msg-icon {
-  height: 0.5em;
-}*/
-
 .close-icon {
   position: absolute;
   top: 2px;
@@ -139,13 +123,11 @@ li:not(.joined-channel)>.leave-ch-icon {
   height: 50vh;
   border-radius: 3px;
   border: solid 1px;
-/*  touch-action: none;
-  box-sizing: border-box;*/
 }
 
 .priv-header {
   background-color: #1a535c;
-  color: #f7fff7;
+  color: #FAFAFA;
   cursor: move;
   height: 10%;
   overflow: hidden;
@@ -154,7 +136,7 @@ li:not(.joined-channel)>.leave-ch-icon {
 }
 
 .priv-body {
-  background-color: #f7fff7;
+  background-color: #FAFAFA;
   height: 90%;
   overflow: scroll;
   padding: 2px;
@@ -176,5 +158,3 @@ li:not(.joined-channel)>.leave-ch-icon {
   position: absolute;
   bottom: 2px;
 }
-
-

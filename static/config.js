@@ -14,7 +14,6 @@ export default class {
 		localStorage.setItem('display_name', display_name);
 	}
 	setChannels(channels) {
-		console.log("set channels called: " + channels);
 		this.channels = channels;
 		localStorage.setItem('channels', JSON.stringify(channels));
 	}
@@ -30,7 +29,7 @@ export default class {
 		this.joined_channels.push(channel);
 		localStorage.setItem('joined_channels', JSON.stringify(this.joined_channels));
 	}
-	LeaveChannel(channel) {
+	leaveChannel(channel) {
 		this.joined_channels = this.joined_channels.filter(x => x != channel);
 	}
 	setCurrentChannel(current_channel) {
