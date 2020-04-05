@@ -1,6 +1,11 @@
+/*body {
+  font-family: sans-serif;
+}*/
+
+
 #sidebar {
   background-color: #1a535c;
-  color: #FFFFFF;
+  color: #f7fff7;
   overflow-y: scroll;
   overflow-x: hidden;
   height: 100vh;
@@ -8,7 +13,7 @@
 
 #sidebar-right {
   background-color: #1a535c;
-  color: #FFFFFF;
+  color: #f7fff7;
   overflow-y: scroll;
   overflow-x: hidden;
   height: 100vh;
@@ -17,6 +22,7 @@
 #main-window {
   background-color: #7fff7;
   height: 100vh;
+  background-color: #f7fff7;
 /*  overflow-y: scroll;
   overflow-x: hidden;*/
  
@@ -24,6 +30,7 @@
 
 #messages-window {
   height: 90vh;
+  background-color: #f7fff7;
   overflow-y: scroll;
   overflow-x: hidden;
 }
@@ -32,6 +39,7 @@
   position: absolute;
   bottom: 0px;
   width: 100%;
+  background-color: #f7fff7;
   /*right: 0px;*/
   /*width: 1000px;*/
   /*height: 10%;*/
@@ -52,7 +60,7 @@
 }
 
 .message {
-  background-color: #ffffff;
+  background-color: #f7fff7;
   width: 100%;
   /*border: 1px solid black;*/
   margin-bottom: 5px;
@@ -99,12 +107,74 @@ li:not(.joined-channel)>.leave-ch-icon {
 
 
 .icon:hover {
-  height: 1.5em;
+  background-color: #ff6b6b;
+  border-radius: 3px;
 }
 
 .icon {
-  height: 1.25em;
+  height: 1em;
 }
 
+.add-ch-icon {
+  height: 2em;
+}
+
+/*.priv-send-msg-icon {
+  height: 0.5em;
+}*/
+
+.close-icon {
+  position: absolute;
+  top: 2px;
+  right: 1px;
+  cursor: pointer;
+}
+
+.priv-msg-container {
+  position: fixed;
+  bottom: 5px;
+  right: 5px;
+  background-color: grey;
+  width: 15%;
+  height: 50vh;
+  border-radius: 3px;
+  border: solid 1px;
+/*  touch-action: none;
+  box-sizing: border-box;*/
+}
+
+.priv-header {
+  background-color: #1a535c;
+  color: #f7fff7;
+  cursor: move;
+  height: 10%;
+  overflow: hidden;
+  padding-left: 2px;
+  border-radius: 3px 3px 0px 0px;
+}
+
+.priv-body {
+  background-color: #f7fff7;
+  height: 90%;
+  overflow: scroll;
+  padding: 2px;
+  border-radius: 0px 0px 3px 3px;
+}
+
+.priv-msg-input {
+  /*height: 10%;*/
+  width: 80%;
+
+}
+
+.priv-messages-area {
+  height: 85%;
+  overflow: scroll;
+}
+
+.priv-message-bar {
+  position: absolute;
+  bottom: 2px;
+}
 
 

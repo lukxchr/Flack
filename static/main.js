@@ -4,11 +4,57 @@ import Globals from './config.js';
 const GLOBALS = new Globals();
 
 //templates
-const channel_template = Handlebars.compile('<li class="channel" data-channel={{ channel_name }}><span class="channel-name-btn" data-channel={{ channel_name }}>{{ channel_name }} </span><img class="icon join-ch-icon" src="static/icons/user-plus.svg" alt="join channel" data-channel={{ channel_name }}><img class="icon leave-ch-icon" src="static/icons/user-minus.svg" alt="leave channel" data-channel={{ channel_name }}></li>');
-const message_template = Handlebars.compile('<div class="message"><strong>{{ sender }}<img class="icon priv-msg-icon" src="static/icons/message-dots.svg" alt="send priv msg" data-user={{ sender }}></strong>@{{ timestamp }}<div>{{ content }}</div></div>');
-const user_template = Handlebars.compile('<li data-user={{ display_name }}>{{ display_name }} <img class="icon priv-msg-icon" src="static/icons/message-dots.svg" alt="send priv msg" data-user={{ display_name }}></li>');
-const spinner_template = Handlebars.compile('<div class="spinner-border text-light" role="status"><span class="sr-only">Loading...</span></div>');
+const channel_template = Handlebars.compile(`
+	<li class="channel" data-channel={{ channel_name }}>
+		<span class="channel-name-btn" data-channel={{ channel_name }}>#{{ channel_name }} </span>
+		<img class="icon join-ch-icon" src="static/icons/user-plus.svg" 
+		alt="join channel" data-channel={{ channel_name }}>
+		<img class="icon leave-ch-icon" src="static/icons/user-minus.svg" 
+		alt="leave channel" data-channel={{ channel_name }}>
+	</li>`);
 
+const message_template = Handlebars.compile(`
+	<div class="message">
+		<strong>
+			{{ sender }}
+			{{#if priv_btn}}
+			<img class="icon priv-msg-icon" src="static/icons/message-dots.svg" 
+			alt="send priv msg" data-receiver={{ sender }}>
+			{{/if}}
+		</strong>
+		@{{ timestamp }}
+		<div>{{ content }}</div>
+	</div>`);
+
+const user_template = Handlebars.compile(`
+	<li data-user={{ display_name }}>{{ display_name }} 
+		{{#if priv_btn}}
+		<img class="icon priv-msg-icon" src="static/icons/message-dots.svg" 
+		alt="send priv msg" data-receiver={{ display_name }}>
+		{{/if}}
+	</li>`);
+
+const spinner_template = Handlebars.compile(`
+	<div class="spinner-border text-light" role="status">
+	<span class="sr-only">Loading...</span></div>`);
+
+const priv_window_template = Handlebars.compile(`
+	<div class="priv-msg-container" data-receiver={{ display_name }}>
+		<div class="priv-header">
+			<strong>~{{ display_name }}</strong>
+			<img class="icon close-icon" src="static/icons/x.svg" alt="close priv">
+		</div>
+		<div class="priv-body">
+			<div class="priv-messages-area"></div>
+			<div class="priv-message-bar">
+				<input type="text" class="priv-msg-input" placeholder="Your message...">
+				<img id="priv-send-button" class="icon priv-send-msg-icon" src="static/icons/send.svg" 
+				alt="send priv message" data-receiver={{ display_name }}>
+			</div>
+		</div>
+	</div>`);
+
+//init: try to load user from localStorage - if failed ask for new display name. Add DOM/socket.io listerners 
 document.addEventListener('DOMContentLoaded', () => {
     addDOMListeners();
     GLOBALS.socket.on('connect', () => {
@@ -61,7 +107,8 @@ function addSocketIOListeners() {
   		const message_area = document.querySelector('#messages-window');
 		const msg = data['message'];
 		message_area.innerHTML += message_template(
-				{'sender' : msg['sender'], 'timestamp' : msg['timestamp'].slice(11,16), 'content' : msg['content']});
+				{'sender' : msg['sender'], 'timestamp' : msg['timestamp'].slice(11,16), 'content' : msg['content'], 
+				priv_btn: (GLOBALS.display_name != msg['sender'] && msg['sender'] !== 'admin') });
 		message_area.scrollBy(0, message_area.scrollHeight);
 	});
 	GLOBALS.socket.on('channel left', (data) => {
@@ -83,42 +130,64 @@ function addSocketIOListeners() {
 			bootbox.alert(data['message']);
 	});
 	GLOBALS.socket.on('announce users', (data) => {
-		console.log('announce users received by client: ' + data['users']);
-		const online_list = document.querySelector('#online-list');
-		online_list.innerHTML = '';
-		data['users'].forEach(display_name => {
-			const user = user_template({display_name: display_name});
-			online_list.innerHTML += user;
-		})
+		renderOnlineUsersList(data['users']);
+	});
+	GLOBALS.socket.on('send priv message to clients', (data) => {
+		//renderPrivateWindow(receiver)
+		const sender = data['message']['sender'];
+		const receiver = data['receiver'];
+		const message = message_template(
+				{sender: sender, timestamp: data['message']['timestamp'].slice(11,16), content: data['message']['content'],
+				priv_btn: false});
+
+		let priv_window;
+		if (GLOBALS.display_name === sender) {
+			priv_window = document.querySelector(`.priv-msg-container[data-receiver=${receiver}]`);
+		} else if (GLOBALS.display_name === receiver) {
+			priv_window = document.querySelector(`.priv-msg-container[data-receiver=${sender}]`);
+			if (!priv_window) {
+				renderPrivateWindow(sender);
+				priv_window = document.querySelector(`.priv-msg-container[data-receiver=${sender}]`);
+			}
+		}
+		let message_area = priv_window.querySelector('.priv-messages-area');
+		message_area.innerHTML += message;	
+		message_area.scrollBy(0, message_area.scrollHeight);
 	});
 }
 
 function addDOMListeners() {
-	//add channel
-	const add_channel_btn = document.querySelector("#add-channel");
-	const new_channel_input = document.querySelector("#new-channel-input");
-	add_channel_btn.onclick = addChannel;
-	new_channel_input.onkeyup = (e) => {
-		if (e.keyCode === 13)
-			addChannel();
-	}
-
-
-	//send message
-	const send_button = document.querySelector("#send-button");
-	const message_input = document.querySelector("#message-input");
-	//send message if send button clicked or Enter key pressed
-	send_button.onclick = sendMessage;
-	message_input.onkeyup = (e) => {
-		if (e.keyCode === 13)
+	//button click listeners
+	document.addEventListener('click', (e) => {
+		if (e.target.matches('#send-button')) {
 			sendMessage();
-	}
-
-	//log out
-	document.querySelector("#log-out-button").onclick = () => {
-		GLOBALS.clearAll();
-		window.location.reload(true);
-	}
+		} else if (e.target.matches('.close-icon')) {
+			const priv_window = e.target.closest('.priv-msg-container');
+			priv_window.parentNode.removeChild(priv_window);
+		} else if (e.target.matches('.priv-send-msg-icon')) {
+			sendPrivateMessage(e.target.dataset.receiver);
+		} else if (e.target.matches('#add-channel')) {
+			addChannel();
+		} else if (e.target.matches('.priv-msg-icon')) {
+			renderPrivateWindow(e.target.dataset.receiver);
+		} else if (e.target.matches('#log-out-button')) {
+			GLOBALS.clearAll();
+			window.location.reload(true);
+		} 
+	});
+	//keyboard event listeners
+	document.addEventListener('keyup', (e) => {
+		//listen only to Enter
+		if (e.keyCode !== 13) return;
+		if (e.target.matches('#message-input')) {
+			sendMessage();
+		} else if (e.target.matches('.priv-msg-input')) {
+			const priv_window = e.target.closest('.priv-msg-container');
+			sendPrivateMessage(priv_window.dataset.receiver);
+		} else if (e.target.matches('#new-channel-input')) {
+			addChannel();
+		} 
+	});
 }
 
 function sendMessage() {
@@ -130,6 +199,14 @@ function sendMessage() {
 	message_input.value = '';
 }
 
+function sendPrivateMessage(receiver) {
+	const priv_window = document.querySelector(`.priv-msg-container[data-receiver=${receiver}]`);
+	const message_input = priv_window.querySelector('.priv-msg-input');
+	GLOBALS.socket.emit('send priv message to server', 
+		{message: message_input.value, sender: GLOBALS.display_name, receiver: receiver, token: GLOBALS.token});
+	message_input.value = '';
+}
+
 function addChannel() {
 	const new_channel_input = document.querySelector("#new-channel-input")
 	const channel_name = new_channel_input.value;
@@ -137,7 +214,7 @@ function addChannel() {
 	new_channel_input.value = '';
 }
 
-//function for loading UI elements 
+//functions for loading UI elements 
 function renderChannelList() {
 	const channel_list = document.querySelector('#channels')
 	channel_list.innerHTML = '';
@@ -185,6 +262,22 @@ function renderChannelList() {
 	});
 }
 
+function renderOnlineUsersList(users) {
+	console.log('announce users received by client: ' + users);
+	const online_list = document.querySelector('#online-list');
+	online_list.innerHTML = '';
+	users.forEach(display_name => {
+		const user = user_template({display_name: display_name, priv_btn: display_name != GLOBALS.display_name});
+		online_list.innerHTML += user;
+	});
+}
+
+function renderPrivateWindow(receiver) {
+	const priv_window = priv_window_template({display_name: receiver});
+	document.querySelector('#priv-messages').innerHTML += priv_window;
+	$(`.priv-msg-container[data-receiver=${receiver}]`).draggable();
+}
+
 function renderDisplayNamePrompt (message='') {
 	bootbox.prompt({
     	title: 'Please choose your display name',
@@ -203,7 +296,10 @@ function renderMessages(messages) {
 	message_area.innerHTML = '';
 	messages.forEach(msg => {
 		message_area.innerHTML += message_template(
-				{'sender' : msg['sender'], 'timestamp' : msg['timestamp'].slice(11,16), 'content' : msg['content']});
+				{'sender' : msg['sender'], 'timestamp' : msg['timestamp'].slice(11,16), 'content' : msg['content'],
+				priv_btn: (GLOBALS.display_name != msg['sender'] && msg['sender'] !== 'admin')});
 	});
 	message_area.scrollBy(0, message_area.scrollHeight); 
 }
+
+

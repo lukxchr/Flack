@@ -12,8 +12,8 @@ socketio = SocketIO(app, always_connect=False)
 
 
 users = []
-#client_ids = {} #client id : display name
 channels = []
+private_channels = []
 
 @app.route("/")
 def index():
@@ -36,6 +36,7 @@ def add_user(data):
 			emit("user added", {'user' : user.serialize(), 
 				'channels' : [ch.name for ch in channels]})
 			emit('announce users', {'users' : [user.display_name for user in users]}, broadcast=True)
+			join_room(request.sid)
 	#new user
 	else:
 		if display_name in users:
@@ -50,6 +51,7 @@ def add_user(data):
 			emit("user added", {'user' : user.serialize(), 
 				'channels' : [ch.name for ch in channels]})
 			emit('announce users', {'users' : [user.display_name for user in users]}, broadcast=True)
+			join_room(request.sid)
 
 @socketio.on('add channel')
 def add_channel(data):
@@ -59,13 +61,15 @@ def add_channel(data):
 			{'channel_name' : channel_name, 'message': 'Channel already exists. Please choose a different name.'})
 	elif not channel_name.isalnum():
 		emit('add channel failed', 
-			{'channel_name' : channel_name, 'message': 'Invalid channel name. Please use letrers and digits only.'})
+			{'channel_name' : channel_name, 'message': 'Invalid channel name. Please use letters and digits only.'})
 	elif len(channel_name) > 20:
 		emit('add channel failed', 
 			{'channel_name' : channel_name, 'message': 'Channel name too long. Please use up to 20 characters.'})
 	else:
 		channels.append(Channel(channel_name))
 		emit('channel added', {'channel_name' : channel_name}, broadcast=True)
+
+
 
 @socketio.on('join channel')
 def join_channel(data):
@@ -117,6 +121,21 @@ def send_message(data):
 	emit('send message to clients', {'message' : message.serialize()}, 
 		room=channel_name, broadcast=True)
 
+@socketio.on('send priv message to server')
+def send_priv_message(data):
+	print(f'send_priv_message: {data}')
+	sender = next((user for user in users if user == data['sender']), None)
+	receiver = next((user for user in users if user == data['receiver']), None)
+	if sender and receiver:
+		message = Message(data['message'], sender.display_name)
+		emit('send priv message to clients', {'message': message.serialize(), 
+			'receiver' : receiver.display_name},
+			room=receiver.token)
+		emit('send priv message to clients', {'message': message.serialize(), 
+			'receiver' : receiver.display_name},
+			room=sender.token)
+	else:
+		print(f'priv message failed s{sender} / r{receiver}')
 
 
 

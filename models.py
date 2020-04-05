@@ -32,15 +32,6 @@ class Channel():
 	def __init__(self, name):
 		self.name = name
 		self.messages = deque(maxlen=100)
-		#self.users = set()
-	# def add_user(self, display_name):
-	# 	self.users.add(display_name)
-	# 	#message = Message(f"{display_name} has joined", "admin")
-	# 	#self.messages.append(message)
-	# def remove_user(self, display_name):
-	# 	self.users.discard(display_name)
-	# 	#message = Message(f"{display_name} has left", "admin")
-	# 	#self.messages.append(message)
 	def add_message(self, message):
 		self.messages.append(message)
 	def __eq__(self, other):
@@ -51,6 +42,13 @@ class Channel():
 	def __repr__(self):
 		return f"Channel: {self.name} | # messages: {len(self.messages)}"
 
+
+# class PrivateChannel(Channel):
+# 	def __init__(self, user, other_user):
+# 		super().__init__(f'priv_{user.display_name}_{other_user.display_name}')
+# 		self.user = user
+# 		self.other_user = other_user
+		
 
 class Message():
 	def __init__(self, content, sender, timestamp=datetime.utcnow()):
