@@ -28,10 +28,6 @@ export const user_template = Handlebars.compile(`
 		{{/if}}
 	</li>`);
 
-export const spinner_template = Handlebars.compile(`
-	<div class="spinner-border text-light" role="status">
-	<span class="sr-only">Loading...</span></div>`);
-
 export const priv_window_template = Handlebars.compile(`
 	<div class="priv-msg-container" data-receiver={{ display_name }}>
 		<div class="priv-header">

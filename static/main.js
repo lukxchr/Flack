@@ -1,5 +1,5 @@
 import Globals from './config.js';
-import {channel_template, message_template, user_template, spinner_template, priv_window_template} from './templates.js'
+import {channel_template, message_template, user_template, priv_window_template} from './templates.js'
 
 //init: try to load user from localStorage - if failed ask for new display name. Add DOM/socket.io listerners 
 const GLOBALS = new Globals();
