@@ -1,7 +1,7 @@
-import Globals from './config.js';
+import Globals from './globals.js';
 import {channel_template, message_template, user_template, priv_window_template} from './templates.js'
 
-//init: try to load user from localStorage - if failed ask for new display name. Add DOM/socket.io listerners 
+//init: try to load user from localStorage - if failed ask for new display name. Add DOM/socket.io listerners
 const GLOBALS = new Globals();
 document.addEventListener('DOMContentLoaded', () => {
     addDOMListeners();
@@ -24,7 +24,7 @@ function addSocketIOListeners() {
 		GLOBALS.setChannels(data['channels']);
 
 		renderChannelList();
-		//handle the case where user was removed from the channel on server side 
+		//handle the case where user was removed from the channel on server side
 		if (!GLOBALS.joined_channels.includes(GLOBALS.current_channel)) {
 			GLOBALS.setCurrentChannel(null);
 		} else if (GLOBALS.current_channel)
@@ -51,7 +51,7 @@ function addSocketIOListeners() {
   		const message_area = document.querySelector('#messages-window');
 		const msg = data['message'];
 		message_area.innerHTML += message_template(
-				{'sender' : msg['sender'], 'timestamp' : msg['timestamp'].slice(11,16), 'content' : msg['content'], 
+				{'sender' : msg['sender'], 'timestamp' : msg['timestamp'].slice(11,16), 'content' : msg['content'],
 				priv_btn: (GLOBALS.display_name != msg['sender'] && msg['sender'] !== 'admin') });
 		message_area.scrollBy(0, message_area.scrollHeight);
 	});
@@ -94,7 +94,7 @@ function addSocketIOListeners() {
 			}
 		}
 		let message_area = priv_window.querySelector('.priv-messages-area');
-		message_area.innerHTML += message;	
+		message_area.innerHTML += message;
 		message_area.scrollBy(0, message_area.scrollHeight);
 	});
 }
@@ -115,14 +115,14 @@ function addDOMListeners() {
 			renderPrivateWindow(e.target.dataset.receiver);
 		} else if (e.target.matches('.channel-name-btn')) {
 			const channel_name = e.target.dataset.channel;
-			if (!GLOBALS.joined_channels.includes(channel_name)) 
+			if (!GLOBALS.joined_channels.includes(channel_name))
 				bootbox.alert('You need to join the channel before viewing it.');
-			else 
+			else
 				GLOBALS.socket.emit('load channel', {channel_name: channel_name});
 		} else if (e.target.matches('.join-ch-icon')) {
 			const channel_name = e.target.dataset.channel;
 			GLOBALS.addJoinedChannel(channel_name);
-			GLOBALS.socket.emit('join channel', 
+			GLOBALS.socket.emit('join channel',
 				{channel_name: channel_name, display_name: GLOBALS.display_name, token: GLOBALS.token});
 			document.querySelector(`li.channel[data-channel=${channel_name}]`).classList.add("joined-channel");
 		} else if (e.target.matches('.leave-ch-icon')) {
@@ -133,7 +133,7 @@ function addDOMListeners() {
 		} else if (e.target.matches('#log-out-button')) {
 			GLOBALS.clearAll();
 			window.location.reload(true);
-		} 
+		}
 	});
 	//keyboard event listeners
 	document.addEventListener('keyup', (e) => {
@@ -146,19 +146,19 @@ function addDOMListeners() {
 			sendPrivateMessage(priv_window.dataset.receiver);
 		} else if (e.target.matches('#new-channel-input')) {
 			addChannel();
-		} 
+		}
 	});
 }
 
 /*
-function for loading UI and other helper functions 
+function for loading UI and other helper functions
 */
 
 function sendMessage() {
 	const send_button = document.querySelector("#send-button");
 	const message_input = document.querySelector("#message-input");
 	const message = message_input.value;
-	GLOBALS.socket.emit('send message to server', 
+	GLOBALS.socket.emit('send message to server',
 		{message: message, channel: GLOBALS.current_channel, display_name: GLOBALS.display_name});
 	message_input.value = '';
 }
@@ -166,7 +166,7 @@ function sendMessage() {
 function sendPrivateMessage(receiver) {
 	const priv_window = document.querySelector(`.priv-msg-container[data-receiver=${receiver}]`);
 	const message_input = priv_window.querySelector('.priv-msg-input');
-	GLOBALS.socket.emit('send priv message to server', 
+	GLOBALS.socket.emit('send priv message to server',
 		{message: message_input.value, sender: GLOBALS.display_name, receiver: receiver, token: GLOBALS.token});
 	message_input.value = '';
 }
@@ -182,8 +182,8 @@ function renderChannelList() {
 	const channel_list = document.querySelector('#channels')
 	channel_list.innerHTML = '';
 	GLOBALS.channels.forEach(ch => {
-		let channel = channel_template({'channel_name' : ch});	
-		channel_list.innerHTML += channel;		
+		let channel = channel_template({'channel_name' : ch});
+		channel_list.innerHTML += channel;
 		if (GLOBALS.current_channel === ch)
 			document.querySelector(`li.channel[data-channel=${ch}]`).classList.add("current-channel");
 		if (GLOBALS.joined_channels.includes(ch))
@@ -227,5 +227,5 @@ function renderMessages(messages) {
 				{'sender' : msg['sender'], 'timestamp' : msg['timestamp'].slice(11,16), 'content' : msg['content'],
 				priv_btn: (GLOBALS.display_name != msg['sender'] && msg['sender'] !== 'admin')});
 	});
-	message_area.scrollBy(0, message_area.scrollHeight); 
+	message_area.scrollBy(0, message_area.scrollHeight);
 }
